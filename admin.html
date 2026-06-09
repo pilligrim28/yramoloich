@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Админ-панель — Колесо баланса</title>
+<style>
+  :root {
+    --primary: #4F46E5;
+    --glass: rgba(255,255,255,0.12);
+    --glass-border: rgba(255,255,255,0.2);
+    --text: #fff;
+    --radius: 14px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .container {
+    width: 100%;
+    max-width: 800px;
+    background: var(--glass);
+    backdrop-filter: blur(14px);
+    border-radius: 24px;
+    padding: 32px 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    border: 1px solid var(--glass-border);
+  }
+  .screen { display: none; animation: fadeIn 0.4s; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  h2 { font-size: 24px; margin-bottom: 20px; }
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 16px 24px;
+    border-radius: var(--radius);
+    border: none;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: inherit;
+    text-decoration: none;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  .btn-primary {
+    background: #fff;
+    color: var(--primary);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  }
+  .btn-secondary {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    border: 1px solid var(--glass-border);
+  }
+  .btn-small { padding: 8px 14px; font-size: 13px; width: auto; display: inline-block; }
+  .btn:active { transform: translateY(2px); }
+
+  .admin-lock { text-align: center; padding: 60px 0; }
+  .admin-lock input { padding: 12px; border-radius: 10px; border: none; width: 280px; margin-bottom: 16px; text-align: center; font-size: 14px; }
+
+  .admin-tabs { display: flex; gap: 6px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
+  .admin-tab { padding: 10px 14px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 13px; cursor: pointer; white-space: nowrap; border: none; color: #fff; transition: all 0.2s; }
+  .admin-tab.active { background: #fff; color: var(--primary); font-weight: 600; }
+  .admin-panel { display: none; }
+  .admin-panel.active { display: block; animation: fadeIn 0.3s; }
+
+  .admin-field { margin-bottom: 16px; }
+  .admin-field label { display: block; font-size: 12px; opacity: 0.8; margin-bottom: 6px; }
+  .admin-field input, .admin-field textarea { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 14px; background: rgba(255,255,255,0.15); color: #fff; }
+  .admin-field textarea { min-height: 100px; resize: vertical; }
+
+  .q-card { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 18px; margin-bottom: 14px; border: 1px solid var(--glass-border); }
+  .q-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .q-num { font-weight: 600; font-size: 14px; }
+  .q-actions button { background: rgba(255,0,0,0.3); border: none; color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+
+  .option-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .option-row input { flex: 1; padding: 10px; border-radius: 6px; border: none; font-size: 13px; background: rgba(255,255,255,0.1); color: #fff; }
+  .btn-icon { background: rgba(0,200,100,0.3); border: none; color: #fff; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; }
+  .btn-icon.delete { background: rgba(255,0,0,0.3); }
+
+  .admin-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+  .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #10B981; color: #fff; padding: 12px 20px; border-radius: 20px; font-size: 14px; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 1000; }
+  .toast.show { opacity: 1; bottom: 40px; }
+
+  .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+
+  @media (max-width: 600px) {
+    .container { padding: 24px 18px; }
+    .admin-lock input { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- LOCK SCREEN -->
+  <div class="screen active" id="screen-lock">
+    <div class="admin-lock">
+      <h2>🔒 Админ-панель</h2>
+      <p style="opacity:0.8; margin:16px 0 24px; font-size:14px;">Введите пароль для доступа к настройкам теста</p>
+      <input type="password" id="admin-pass" placeholder="Пароль" onkeypress="if(event.key==='Enter') admin.check()">
+      <br>
+      <button class="btn btn-primary" onclick="admin.check()" style="max-width:280px; margin:0 auto;">Войти</button>
+      <p style="margin-top:20px; font-size:12px; opacity:0.6;">
+        <a href="index.html" style="color:#fff; opacity:0.7;">← Вернуться к тесту</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div class="screen" id="screen-admin">
+    <div class="header-row">
+      <h2>⚙️ Настройки теста</h2>
+      <button class="btn btn-secondary btn-small" onclick="admin.logout()">Выйти</button>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="admin.switchTab('start', this)"> Старт</button>
+      <button class="admin-tab" onclick="admin.switchTab('questions', this)">❓ Вопросы</button>
+      <button class="admin-tab" onclick="admin.switchTab('results', this)">🎁 Результаты</button>
+      <button class="admin-tab" onclick="admin.switchTab('backup', this)">💾 Бэкап</button>
+    </div>
+
+    <!-- TAB: START -->
+    <div id="tab-start" class="admin-panel active">
+      <div class="admin-field">
+        <label>Заголовок главной страницы</label>
+        <input id="adm-title">
+      </div>
+      <div class="admin-field">
+        <label>Подзаголовок (описание теста)</label>
+        <textarea id="adm-lead"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="admin.save()">💾 Сохранить изменения</button>
+    </div>
+
+    <!-- TAB: QUESTIONS -->
+    <div id="tab-questions" class="admin-panel">
+      <div id="questions-list"></div>
+      <button class="btn btn-secondary" onclick="admin.addQuestion()">+ Добавить вопрос</button>
+      <div class="admin-actions">
+        <button class="btn btn-primary" onclick="admin.save()">💾 Сохранить все изменения</button>
+        <button class="btn btn-secondary" onclick="admin.resetDefaults()"> Сбросить к исходным</button>
+      </div>
+    </div>
+
+    <!-- TAB: RESULTS -->
+    <div id="tab-results" class="admin-panel">
+      <div id="results-editor"></div>
+      <button class="btn btn-primary" onclick="admin.save()">💾 Сохранить изменения</button>
+    </div>
+
+    <!-- TAB: BACKUP -->
+    <div id="tab-backup" class="admin-panel">
+      <p style="font-size:14px; opacity:0.9; margin-bottom:20px; line-height:1.6;">
+        Экспортируйте настройки в файл для резервной копии или загрузите ранее сохранённый JSON.
+      </p>
+      <div class="admin-actions">
+        <button class="btn btn-secondary" onclick="admin.export()">📥 Скачать JSON</button>
+        <label class="btn btn-secondary" style="cursor:pointer; text-align:center; flex:1;">
+           Загрузить JSON
+          <input type="file" accept=".json" onchange="admin.import(this)" style="display:none;">
+        </label>
+        <button class="btn btn-secondary" onclick="admin.clearStorage()">🗑 Очистить данные</button>
+      </div>
+      <p style="margin-top:20px; font-size:12px; opacity:0.7;">
+        <a href="index.html" style="color:#fff;">← Перейти к тесту</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Сохранено!</div>
+
+<script>
+const DEFAULT_DATA = {
+  start: {
+    title: "Какой из 4-х видов отдыха нужен тебе прямо сейчас?",
+    lead: "Иногда кажется, что нужен просто отдых. Но отдых бывает разным. Кому-то важно восстановить силы в тишине, кому-то нужны новые впечатления, общение, движение или смена обстановки.\n\nПройди тест «Колесо баланса, отдыха и ресурса» и узнай, какой вид отдыха и наполнения ресурсом подходит тебе больше всего сейчас.\n\nВ конце тебя ждут приятные подарки."
+  },
+  questions: [
+    { q: "С какой мыслью ты чаще всего просыпаешься?", opts: [{t:"Хочу ещё поспать, сил нет", k:"A"}, {t:"Хочется тепла и поддержки", k:"B"}, {t:"Всё одно и то же, хочется перемен", k:"V"}, {t:"Много мыслей, но нет ясности", k:"G"}] },
+    { q: "Твои идеальные выходные сейчас — это…", opts: [{t:"Ничего не делать, тишина и покой", k:"A"}, {t:"Провести время с близкими", k:"B"}, {t:"Поехать куда-то или получить новые эмоции", k:"V"}, {t:"Узнать что-то новое, сходить на обучение", k:"G"}] },
+    { q: "Что больше всего раздражает в жизни сейчас?", opts: [{t:"Постоянная усталость и перегруз", k:"A"}, {t:"Ощущение, что ты всем должен", k:"B"}, {t:"Скука и однообразие", k:"V"}, {t:"Нет роста, ощущение застоя", k:"G"}] },
+    { q: "На что ты чаще обращаешь внимание в соцсетях?", opts: [{t:"Отдых, природа, спокойные картинки", k:"A"}, {t:"Отношения, искренние истории", k:"B"}, {t:"Путешествия, события, яркие моменты", k:"V"}, {t:"Обучение, развитие, полезные разборы", k:"G"}] },
+    { q: "Если у тебя есть час только для себя, ты…", opts: [{t:"Ляжешь и отдохнёшь", k:"A"}, {t:"Свяжешься с близким человеком", k:"B"}, {t:"Пойдёшь куда-то новое", k:"V"}, {t:"Займёшься чем-то полезным для развития", k:"G"}] },
+    { q: "Чего тебе сейчас больше всего не хватает?", opts: [{t:"Энергии и покоя", k:"A"}, {t:"Тепла и поддержки", k:"B"}, {t:"Вдохновения и эмоций", k:"V"}, {t:"Понимания, куда двигаться", k:"G"}] },
+    { q: "Что говорит тебе твоё тело?", opts: [{t:"Я усталО, мне нужен отдых", k:"A"}, {t:"Мне не хватает заботы и мягкости", k:"B"}, {t:"Мне нужно движение, смена обстановки", k:"V"}, {t:"У меня перегруз в голове", k:"G"}] },
+    { q: "Если представить фильм про твою жизнь сейчас, он был бы…", opts: [{t:"Спокойный, но немного затянутый", k:"A"}, {t:"Про отношения и переживания", k:"B"}, {t:"Про поиск и приключения", k:"V"}, {t:"Про рост, цели и достижения", k:"G"}] },
+    { q: "Что поможет тебе почувствовать себя лучше уже сегодня?", opts: [{t:"Отдохнуть и отключиться", k:"A"}, {t:"Поговорить по душам", k:"B"}, {t:"Сделать что-то новое или спонтанное", k:"V"}, {t:"Получить инсайт или идею", k:"G"}] },
+    { q: "О чём ты сейчас мечтаешь сильнее всего?", opts: [{t:"Просто выдохнуть и восстановиться", k:"A"}, {t:"Быть рядом с «своими» людьми", k:"B"}, {t:"Ярко пожить, сменить обстановку", k:"V"}, {t:"Выйти на новый уровень в жизни или работе", k:"G"}] },
+    { q: "Какой подарок тебя сейчас реально обрадует?", opts: [{t:"Отдых, массаж, SPA", k:"A"}, {t:"Время с близкими", k:"B"}, {t:"Новые впечатления", k:"V"}, {t:"Обучение или личная консультация", k:"G"}] }
+  ],
+  results: {
+    A: { icon: "🌿", title: "Тело и релакс", text: "Похоже, сейчас тебе нужен не новый рывок, а отдых и восстановление. Тело уже давно просит замедлиться и вернуть себе ресурс.", gift: "🎁 Медитации для восстановления\n🎁 Сертификат от партнёра на практику для тела", buttons: [{t:"🧘 Получить медитации", u:"#", sec:false}, {t:"💆 Получить релакс в подарок", u:"#", sec:true}] },
+    B: { icon: "❤️", title: "Отношения и окружение", text: "Сейчас твой главный ресурс — люди рядом. Поддержка, тёплое общение, новые знакомства и окружение, где тебя понимают.", gift: "🎁 Участвуй в онлайн-нетворкингах «Бизнес на связях» в чате. Читай закреп, пиши визитку, получай новых друзей, партнёров и тёплое общение.", buttons: [{t:"🎟 Получить билет на нетворкинг", u:"#", sec:false}] },
+    V: { icon: "✨", title: "Впечатления и эмоции", text: "Тебе сейчас нужны новые эмоции, движение и смена обстановки. Иногда одна поездка или новое окружение дают больше энергии, чем месяцы рутины.", gift: "Мы организуем путешествия и выезды по России и за границу — с атмосферой, отдыхом, нетворкингом и яркими впечатлениями ✈️", buttons: [{t:"🏔 Поездки по России", u:"#", sec:false}, {t:"🎓 Выезды с обучением и нетворкингом", u:"#", sec:false}, {t:"🧖 SPA / relax-выезды", u:"#", sec:false}, {t:"🔔 Хочу узнавать обо всех поездках", u:"#", sec:true}] },
+    G: { icon: "🚀", title: "Развитие и рост", text: "Сейчас тебе важно вернуть ощущение движения и ясности. Внутри есть желание расти, но не всегда хватает системы и понятного вектора.", gift: "🎁 Мы дарим тебе «Зеркальный спринт» — пространство, где мы соединяем тело, цели, продвижение и рост, уделяя им внимание 25 минут в день.", buttons: [{t:"🚀 Войти в Зеркальный спринт", u:"https://t.me/your_bot", sec:false}, {t:"Промокод: РОСТ", u:"#", sec:true}] }
+  }
+};
+
+const dataManager = {
+  data: null,
+  load() {
+    const stored = localStorage.getItem('wheelQuizData');
+    this.data = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_DATA));
+  },
+  save() {
+    localStorage.setItem('wheelQuizData', JSON.stringify(this.data));
+    toast('✅ Сохранено!');
+  },
+  reset() {
+    this.data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    this.save();
+    admin.renderAll();
+    toast('🔄 Сброшено к стандартным');
+  }
+};
+
+const admin = {
+  password: 'admin123',
+  activeTab: 'start',
+  check() {
+    const pass = document.getElementById('admin-pass').value;
+    if (pass === this.password) {
+      switchScreen('screen-admin');
+      dataManager.load();
+      this.renderAll();
+    } else {
+      alert('❌ Неверный пароль');
+    }
+  },
+  logout() {
+    document.getElementById('admin-pass').value = '';
+    switchScreen('screen-lock');
+  },
+  switchTab(tab, btn) {
+    this.activeTab = tab;
+    document.querySelectorAll('.admin-tab').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.admin-panel').forEach(el => el.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+    if (tab === 'questions') this.renderQuestions();
+    if (tab === 'results') this.renderResults();
+  },
+  renderAll() {
+    document.getElementById('adm-title').value = dataManager.data.start.title;
+    document.getElementById('adm-lead').value = dataManager.data.start.lead;
+    this.renderQuestions();
+    this.renderResults();
+  },
+  renderQuestions() {
+    const list = document.getElementById('questions-list');
+    list.innerHTML = '';
+    dataManager.data.questions.forEach((q, qi) => {
+      const card = document.createElement('div');
+      card.className = 'q-card';
+      let html = `<div class="q-header"><span class="q-num">Вопрос ${qi+1}</span><div class="q-actions"><button onclick="admin.deleteQuestion(${qi})">✖ Удалить</button></div></div>`;
+      html += `<div class="admin-field"><input value="${q.q.replace(/"/g, '&quot;')}" onchange="dataManager.data.questions[${qi}].q=this.value" placeholder="Текст вопроса"></div>`;
+      html += '<div>';
+      q.opts.forEach((o, oi) => {
+        html += `<div class="option-row"><input value="${o.t.replace(/"/g, '&quot;')}" onchange="dataManager.data.questions[${qi}].opts[${oi}].t=this.value" placeholder="Вариант ${o.k}"><span style="font-size:12px; opacity:0.7; min-width:30px;">${o.k}</span></div>`;
+      });
+      html += '</div>';
+      card.innerHTML = html;
+      list.appendChild(card);
+    });
+  },
+  addQuestion() {
+    dataManager.data.questions.push({
+      q: "Новый вопрос",
+      opts: [{t:"Ответ 1", k:"A"}, {t:"Ответ 2", k:"B"}, {t:"Ответ 3", k:"V"}, {t:"Ответ 4", k:"G"}]
+    });
+    this.renderQuestions();
+  },
+  deleteQuestion(idx) {
+    if (confirm('Удалить этот вопрос?')) {
+      dataManager.data.questions.splice(idx, 1);
+      this.renderQuestions();
+    }
+  },
+  renderResults() {
+    const ed = document.getElementById('results-editor');
+    ed.innerHTML = '';
+    ['A','B','V','G'].forEach(k => {
+      const r = dataManager.data.results[k];
+      let html = `<div class="q-card"><h3 style="margin-bottom:14px; font-size:16px;">🎯 Результат ${k}</h3>`;
+      html += `<div class="admin-field"><label>Иконка (эмодзи)</label><input value="${r.icon}" onchange="dataManager.data.results['${k}'].icon=this.value"></div>`;
+      html += `<div class="admin-field"><label>Заголовок</label><input value="${r.title}" onchange="dataManager.data.results['${k}'].title=this.value"></div>`;
+      html += `<div class="admin-field"><label>Текст результата</label><textarea onchange="dataManager.data.results['${k}'].text=this.value">${r.text}</textarea></div>`;
+      html += `<div class="admin-field"><label>Подарки и описание</label><textarea onchange="dataManager.data.results['${k}'].gift=this.value">${r.gift}</textarea></div>`;
+      html += '<div class="admin-field"><label>Кнопки действий</label>';
+      r.buttons.forEach((b, bi) => {
+        html += `<div class="option-row"><input value="${b.t.replace(/"/g, '&quot;')}" onchange="dataManager.data.results['${k}'].buttons[${bi}].t=this.value" placeholder="Текст кнопки"><input value="${b.u}" onchange="dataManager.data.results['${k}'].buttons[${bi}].u=this.value" placeholder="https://" style="flex:1.5;"><button class="btn-icon delete" onclick="admin.deleteButton('${k}',${bi})">✖</button></div>`;
+      });
+      html += `<button class="btn-icon" onclick="admin.addButton('${k}')">+ Добавить кнопку</button></div></div>`;
+      ed.innerHTML += html;
+    });
+  },
+  addButton(k) {
+    dataManager.data.results[k].buttons.push({t:"Новая кнопка", u:"#", sec:true});
+    this.renderResults();
+  },
+  deleteButton(k, idx) {
+    dataManager.data.results[k].buttons.splice(idx, 1);
+    this.renderResults();
+  },
+  save() {
+    dataManager.data.start.title = document.getElementById('adm-title').value;
+    dataManager.data.start.lead = document.getElementById('adm-lead').value;
+    dataManager.save();
+  },
+  resetDefaults() {
+    if (confirm('⚠️ Сбросить все настройки к исходным? Это удалит все ваши изменения.')) {
+      dataManager.reset();
+    }
+  },
+  export() {
+    const blob = new Blob([JSON.stringify(dataManager.data, null, 2)], {type: 'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'wheel-quiz-backup-' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+    toast('📥 Файл скачан');
+  },
+  import(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        dataManager.data = JSON.parse(e.target.result);
+        dataManager.save();
+        this.renderAll();
+        toast('✅ Загружено!');
+      } catch {
+        alert('❌ Ошибка чтения JSON файла');
+      }
+    };
+    reader.readAsText(file);
+  },
+  clearStorage() {
+    if (confirm('⚠️ Очистить все сохранённые данные? Тест вернётся к настройкам по умолчанию.')) {
+      localStorage.removeItem('wheelQuizData');
+      dataManager.load();
+      this.renderAll();
+      toast('🗑 Данные очищены');
+    }
+  }
+};
+
+function switchScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

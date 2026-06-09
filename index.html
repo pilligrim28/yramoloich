@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Колесо баланса, отдыха и ресурса</title>
+<style>
+  :root {
+    --primary: #4F46E5;
+    --glass: rgba(255,255,255,0.12);
+    --glass-border: rgba(255,255,255,0.2);
+    --text: #fff;
+    --radius: 14px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .container {
+    width: 100%;
+    max-width: 480px;
+    background: var(--glass);
+    backdrop-filter: blur(14px);
+    border-radius: 24px;
+    padding: 32px 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    border: 1px solid var(--glass-border);
+  }
+  .screen { display: none; animation: fadeIn 0.4s; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  .hero-image {
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto 24px;
+    display: block;
+    border-radius: 20px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    animation: float 6s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  h1 { font-size: 24px; text-align: center; margin-bottom: 16px; font-weight: 700; line-height: 1.3; }
+  .lead { text-align: center; font-size: 15px; line-height: 1.7; opacity: 0.95; margin-bottom: 24px; white-space: pre-line; }
+  .highlight { background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 6px; font-weight: 600; }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 18px 24px;
+    border-radius: var(--radius);
+    border: none;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: inherit;
+    text-decoration: none;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #1f2937;
+    box-shadow: 0 8px 24px rgba(251, 191, 36, 0.4);
+  }
+  .btn-primary:active { transform: translateY(2px); }
+  .btn-secondary {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    border: 1px solid var(--glass-border);
+    font-size: 15px;
+  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .progress-wrap { margin-bottom: 20px; }
+  .progress-info { display: flex; justify-content: space-between; font-size: 13px; opacity: 0.85; margin-bottom: 8px; }
+  .progress-bar { height: 6px; background: rgba(255,255,255,0.2); border-radius: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #fff, #fbbf24); border-radius: 10px; transition: width 0.4s; width: 0%; }
+
+  .question-text { font-size: 18px; font-weight: 600; line-height: 1.4; margin-bottom: 20px; min-height: 60px; }
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .option {
+    background: rgba(255,255,255,0.12);
+    border: 2px solid transparent;
+    color: #fff;
+    padding: 14px 16px;
+    border-radius: 12px;
+    font-size: 15px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .option:hover { background: rgba(255,255,255,0.2); }
+  .option.selected { background: #fff; color: var(--primary); border-color: #fff; font-weight: 600; }
+
+  .nav-row { display: flex; gap: 10px; margin-top: 20px; }
+  .nav-btn { flex: 1; padding: 14px; border-radius: 12px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .nav-back { background: rgba(255,255,255,0.15); color: #fff; }
+  .nav-back:disabled { opacity: 0.3; }
+  .nav-next { background: #fff; color: var(--primary); }
+  .nav-next:disabled { background: rgba(255,255,255,0.4); color: rgba(79,70,229,0.5); }
+
+  .res-icon {
+    width: 88px; height: 88px;
+    margin: 0 auto 16px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 42px;
+    border: 3px solid var(--glass-border);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.4); }
+    50% { box-shadow: 0 0 0 12px rgba(255,255,255,0); }
+  }
+  .res-title { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 16px; }
+  .res-text { background: rgba(255,255,255,0.1); border-radius: 14px; padding: 18px; font-size: 15px; line-height: 1.6; margin-bottom: 18px; }
+  .res-gift { background: rgba(255,255,255,0.15); border-left: 4px solid #fbbf24; border-radius: 12px; padding: 16px; font-size: 14px; line-height: 1.6; margin-bottom: 20px; white-space: pre-line; }
+  .res-gift strong { display: block; margin-bottom: 6px; font-size: 15px; color: #fbbf24; }
+  .restart { display: block; text-align: center; margin-top: 16px; font-size: 13px; color: #fff; opacity: 0.75; background: none; border: none; cursor: pointer; text-decoration: underline; }
+  .meta { text-align: center; font-size: 12px; opacity: 0.7; margin-top: 16px; }
+
+  @media (max-width: 480px) {
+    .container { padding: 24px 18px; }
+    h1 { font-size: 22px; }
+    .hero-image { max-width: 280px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- START SCREEN -->
+  <div class="screen active" id="screen-start">
+    <img src="wheel-balance.png" alt="Колесо баланса" class="hero-image" onerror="this.style.display='none'">
+    <h1 id="start-title">Какой из 4-х видов отдыха нужен тебе прямо сейчас?</h1>
+    <p class="lead" id="start-lead">Иногда кажется, что нужен просто отдых. Но отдых бывает разным. Кому-то важно восстановить силы в тишине, кому-то нужны <span class="highlight">новые впечатления</span>, общение, движение или смена обстановки.
+
+Пройди тест «Колесо баланса, отдыха и ресурса» и узнай, какой вид отдыха и наполнения ресурсом подходит тебе больше всего сейчас.
+
+В конце тебя ждут приятные подарки.</p>
+    <button class="btn btn-primary" onclick="quiz.start()">🎡 Начать тест — Колесо баланса</button>
+    <p class="meta">🎁 В конце тебя ждут приятные подарки<br>⏱ Займёт около 2 минут</p>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div class="screen" id="screen-question">
+    <div class="progress-wrap">
+      <div class="progress-info">
+        <span id="q-counter">Вопрос 1 из 11</span>
+        <span id="q-percent">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+    <div class="question-text" id="question-text"></div>
+    <div class="options" id="options"></div>
+    <div class="nav-row">
+      <button class="nav-btn nav-back" id="btn-back" onclick="quiz.prev()" disabled>← Назад</button>
+      <button class="nav-btn nav-next" id="btn-next" onclick="quiz.next()" disabled>Далее →</button>
+    </div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="screen" id="screen-result">
+    <div class="res-icon" id="res-icon">🌿</div>
+    <h2 class="res-title" id="res-title">Тело и релакс</h2>
+    <div class="res-text" id="res-text"></div>
+    <div class="res-gift" id="res-gift"></div>
+    <div id="res-buttons"></div>
+    <button class="restart" onclick="quiz.restart()">🔄 Пройти тест заново</button>
+  </div>
+</div>
+
+<script>
+const DEFAULT_DATA = {
+  start: {
+    title: "Какой из 4-х видов отдыха нужен тебе прямо сейчас?",
+    lead: "Иногда кажется, что нужен просто отдых. Но отдых бывает разным. Кому-то важно восстановить силы в тишине, кому-то нужны новые впечатления, общение, движение или смена обстановки.\n\nПройди тест «Колесо баланса, отдыха и ресурса» и узнай, какой вид отдыха и наполнения ресурсом подходит тебе больше всего сейчас.\n\nВ конце тебя ждут приятные подарки."
+  },
+  questions: [
+    { q: "С какой мыслью ты чаще всего просыпаешься?", opts: [{t:"Хочу ещё поспать, сил нет", k:"A"}, {t:"Хочется тепла и поддержки", k:"B"}, {t:"Всё одно и то же, хочется перемен", k:"V"}, {t:"Много мыслей, но нет ясности", k:"G"}] },
+    { q: "Твои идеальные выходные сейчас — это…", opts: [{t:"Ничего не делать, тишина и покой", k:"A"}, {t:"Провести время с близкими", k:"B"}, {t:"Поехать куда-то или получить новые эмоции", k:"V"}, {t:"Узнать что-то новое, сходить на обучение", k:"G"}] },
+    { q: "Что больше всего раздражает в жизни сейчас?", opts: [{t:"Постоянная усталость и перегруз", k:"A"}, {t:"Ощущение, что ты всем должен", k:"B"}, {t:"Скука и однообразие", k:"V"}, {t:"Нет роста, ощущение застоя", k:"G"}] },
+    { q: "На что ты чаще обращаешь внимание в соцсетях?", opts: [{t:"Отдых, природа, спокойные картинки", k:"A"}, {t:"Отношения, искренние истории", k:"B"}, {t:"Путешествия, события, яркие моменты", k:"V"}, {t:"Обучение, развитие, полезные разборы", k:"G"}] },
+    { q: "Если у тебя есть час только для себя, ты…", opts: [{t:"Ляжешь и отдохнёшь", k:"A"}, {t:"Свяжешься с близким человеком", k:"B"}, {t:"Пойдёшь куда-то новое", k:"V"}, {t:"Займёшься чем-то полезным для развития", k:"G"}] },
+    { q: "Чего тебе сейчас больше всего не хватает?", opts: [{t:"Энергии и покоя", k:"A"}, {t:"Тепла и поддержки", k:"B"}, {t:"Вдохновения и эмоций", k:"V"}, {t:"Понимания, куда двигаться", k:"G"}] },
+    { q: "Что говорит тебе твоё тело?", opts: [{t:"Я усталО, мне нужен отдых", k:"A"}, {t:"Мне не хватает заботы и мягкости", k:"B"}, {t:"Мне нужно движение, смена обстановки", k:"V"}, {t:"У меня перегруз в голове", k:"G"}] },
+    { q: "Если представить фильм про твою жизнь сейчас, он был бы…", opts: [{t:"Спокойный, но немного затянутый", k:"A"}, {t:"Про отношения и переживания", k:"B"}, {t:"Про поиск и приключения", k:"V"}, {t:"Про рост, цели и достижения", k:"G"}] },
+    { q: "Что поможет тебе почувствовать себя лучше уже сегодня?", opts: [{t:"Отдохнуть и отключиться", k:"A"}, {t:"Поговорить по душам", k:"B"}, {t:"Сделать что-то новое или спонтанное", k:"V"}, {t:"Получить инсайт или идею", k:"G"}] },
+    { q: "О чём ты сейчас мечтаешь сильнее всего?", opts: [{t:"Просто выдохнуть и восстановиться", k:"A"}, {t:"Быть рядом с «своими» людьми", k:"B"}, {t:"Ярко пожить, сменить обстановку", k:"V"}, {t:"Выйти на новый уровень в жизни или работе", k:"G"}] },
+    { q: "Какой подарок тебя сейчас реально обрадует?", opts: [{t:"Отдых, массаж, SPA", k:"A"}, {t:"Время с близкими", k:"B"}, {t:"Новые впечатления", k:"V"}, {t:"Обучение или личная консультация", k:"G"}] }
+  ],
+  results: {
+    A: { icon: "", title: "Тело и релакс", text: "Похоже, сейчас тебе нужен не новый рывок, а отдых и восстановление. Тело уже давно просит замедлиться и вернуть себе ресурс.", gift: "🎁 Медитации для восстановления\n🎁 Сертификат от партнёра на практику для тела", buttons: [{t:"🧘 Получить медитации", u:"#", sec:false}, {t:"💆 Получить релакс в подарок", u:"#", sec:true}] },
+    B: { icon: "❤️", title: "Отношения и окружение", text: "Сейчас твой главный ресурс — люди рядом. Поддержка, тёплое общение, новые знакомства и окружение, где тебя понимают.", gift: "🎁 Участвуй в онлайн-нетворкингах «Бизнес на связях» в чате. Читай закреп, пиши визитку, получай новых друзей, партнёров и тёплое общение.", buttons: [{t:"🎟 Получить билет на нетворкинг", u:"#", sec:false}] },
+    V: { icon: "✨", title: "Впечатления и эмоции", text: "Тебе сейчас нужны новые эмоции, движение и смена обстановки. Иногда одна поездка или новое окружение дают больше энергии, чем месяцы рутины.", gift: "Мы организуем путешествия и выезды по России и за границу — с атмосферой, отдыхом, нетворкингом и яркими впечатлениями ✈️", buttons: [{t:"🏔 Поездки по России", u:"#", sec:false}, {t:" Выезды с обучением и нетворкингом", u:"#", sec:false}, {t:"🧖 SPA / relax-выезды", u:"#", sec:false}, {t:"🔔 Хочу узнавать обо всех поездках", u:"#", sec:true}] },
+    G: { icon: "", title: "Развитие и рост", text: "Сейчас тебе важно вернуть ощущение движения и ясности. Внутри есть желание расти, но не всегда хватает системы и понятного вектора.", gift: "🎁 Мы дарим тебе «Зеркальный спринт» — пространство, где мы соединяем тело, цели, продвижение и рост, уделяя им внимание 25 минут в день.", buttons: [{t:" Войти в Зеркальный спринт", u:"https://t.me/your_bot", sec:false}, {t:"Промокод: РОСТ", u:"#", sec:true}] }
+  }
+};
+
+const dataManager = {
+  data: null,
+  load() {
+    const stored = localStorage.getItem('wheelQuizData');
+    this.data = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_DATA));
+  }
+};
+
+const quiz = {
+  current: 0,
+  answers: [],
+  init() {
+    dataManager.load();
+    this.renderStart();
+  },
+  renderStart() {
+    document.getElementById('start-title').textContent = dataManager.data.start.title;
+    document.getElementById('start-lead').innerHTML = dataManager.data.start.lead.replace(/\n/g, '<br>');
+  },
+  start() {
+    this.current = 0;
+    this.answers = new Array(dataManager.data.questions.length).fill(null);
+    switchScreen('screen-question');
+    this.renderQ();
+  },
+  renderQ() {
+    const q = dataManager.data.questions[this.current];
+    document.getElementById('question-text').textContent = q.q;
+    document.getElementById('q-counter').textContent = `Вопрос ${this.current+1} из ${dataManager.data.questions.length}`;
+    const pct = Math.round((this.current / dataManager.data.questions.length) * 100);
+    document.getElementById('q-percent').textContent = pct + '%';
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('btn-back').disabled = this.current === 0;
+    document.getElementById('btn-next').disabled = this.answers[this.current] === null;
+    document.getElementById('btn-next').textContent = this.current === dataManager.data.questions.length - 1 ? 'Узнать результат ✨' : 'Далее →';
+    
+    const opts = document.getElementById('options');
+    opts.innerHTML = '';
+    q.opts.forEach((o, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'option' + (this.answers[this.current] === i ? ' selected' : '');
+      btn.textContent = o.t;
+      btn.onclick = () => this.select(i);
+      opts.appendChild(btn);
+    });
+  },
+  select(i) {
+    this.answers[this.current] = i;
+    document.querySelectorAll('.option').forEach((el, idx) => el.classList.toggle('selected', idx === i));
+    document.getElementById('btn-next').disabled = false;
+  },
+  next() {
+    if (this.answers[this.current] === null) return;
+    if (this.current < dataManager.data.questions.length - 1) {
+      this.current++;
+      this.renderQ();
+    } else {
+      this.showResult();
+    }
+  },
+  prev() {
+    if (this.current > 0) {
+      this.current--;
+      this.renderQ();
+    }
+  },
+  showResult() {
+    const counts = {A:0, B:0, V:0, G:0};
+    this.answers.forEach((ans, qIdx) => {
+      if (ans !== null) counts[dataManager.data.questions[qIdx].opts[ans].k]++;
+    });
+    let winner = 'A';
+    let maxCount = 0;
+    Object.entries(counts).forEach(([key, count]) => {
+      if (count > maxCount) { maxCount = count; winner = key; }
+    });
+    const r = dataManager.data.results[winner];
+    document.getElementById('res-icon').textContent = r.icon;
+    document.getElementById('res-title').textContent = r.title;
+    document.getElementById('res-text').textContent = r.text;
+    document.getElementById('res-gift').innerHTML = '<strong>🎁 Подарки:</strong><br>' + r.gift;
+    const btns = document.getElementById('res-buttons');
+    btns.innerHTML = '';
+    r.buttons.forEach(b => {
+      const a = document.createElement('a');
+      a.href = b.u;
+      a.target = '_blank';
+      a.className = 'btn ' + (b.sec ? 'btn-secondary' : 'btn-primary');
+      a.textContent = b.t;
+      a.style.marginBottom = '10px';
+      btns.appendChild(a);
+    });
+    switchScreen('screen-result');
+  },
+  restart() {
+    switchScreen('screen-start');
+  }
+};
+
+function switchScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+quiz.init();
+</script>
+</body>
+</html>
