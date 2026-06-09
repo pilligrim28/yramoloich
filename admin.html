@@ -80,6 +80,66 @@
   .admin-field input, .admin-field textarea { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 14px; background: rgba(255,255,255,0.15); color: #fff; }
   .admin-field textarea { min-height: 100px; resize: vertical; }
 
+  .md-editor { position: relative; }
+  .md-toolbar { display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; align-items: center; }
+  .md-btn {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    font-family: inherit;
+  }
+  .md-btn:hover { background: rgba(255,255,255,0.35); }
+  .md-btn.md-emoji-btn { width: auto; padding: 0 10px; font-size: 16px; }
+  .md-editor textarea, .md-editor input.md-input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    font-family: inherit;
+  }
+  .md-editor textarea { min-height: 100px; resize: vertical; }
+  .md-editor input.md-input { padding: 10px; font-size: 13px; }
+  .md-hint { font-size: 11px; opacity: 0.55; margin-top: 4px; }
+  .emoji-picker {
+    display: none;
+    position: absolute;
+    z-index: 50;
+    background: rgba(30, 20, 60, 0.97);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    max-width: 280px;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+  }
+  .emoji-picker.open { display: grid; }
+  .emoji-picker button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    line-height: 1;
+  }
+  .emoji-picker button:hover { background: rgba(255,255,255,0.15); }
+  .icon-row { display: flex; gap: 8px; align-items: center; }
+  .icon-row input { flex: 1; }
+  .icon-preview { font-size: 28px; min-width: 40px; text-align: center; }
+
   .q-card { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 18px; margin-bottom: 14px; border: 1px solid var(--glass-border); }
   .q-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .q-num { font-weight: 600; font-size: 14px; }
@@ -141,7 +201,7 @@
       </div>
       <div class="admin-field">
         <label>Подзаголовок (описание теста)</label>
-        <textarea id="adm-lead"></textarea>
+        <div id="adm-lead-wrap"></div>
       </div>
       <button class="btn btn-primary" onclick="admin.save()">💾 Сохранить изменения</button>
     </div>
@@ -211,6 +271,167 @@ const DEFAULT_DATA = {
   }
 };
 
+const EMOJI_LIST = [
+  '😀','😃','😄','😁','😊','🥰','😍','🤩','😎','🤗','🤔','😴','🥱','😢','😭','🤯',
+  '💪','👍','👏','🙌','🤝','💬','❤️','🧡','💛','💚','💙','💜','🖤','🤍','💕','💖',
+  '✨','⭐','🌟','💫','🔥','💥','⚡','🌈','☀️','🌙','🌿','🍀','🌸','🌺','🌻','🌹',
+  '🎁','🎉','🎊','🏆','🥇','🎯','🚀','✈️','🏔','🧖','💆','🧘','🎓','📚','💼','💡',
+  '🔔','🎟','🏠','🔑','✅','❌','⚠️','💯','🧠','💎','🌍','🏕','⛺','🛁','🍃','🦋'
+];
+
+const mdEditor = {
+  activePicker: null,
+  createField({ value = '', onInput, placeholder = '', multiline = true, minHeight = '100px' }) {
+    const wrap = document.createElement('div');
+    wrap.className = 'md-editor';
+
+    const toolbar = document.createElement('div');
+    toolbar.className = 'md-toolbar';
+    toolbar.innerHTML = `
+      <button type="button" class="md-btn" title="Жирный (**текст**)"><b>B</b></button>
+      <button type="button" class="md-btn" title="Курсив (*текст*)"><i>I</i></button>
+      <button type="button" class="md-btn" title="Подчёркивание (__текст__)"><u>U</u></button>
+      <button type="button" class="md-btn md-emoji-btn" title="Вставить эмодзи">😀</button>
+    `;
+    toolbar.querySelectorAll('.md-btn')[0].onclick = (e) => this.applyFormat(e.currentTarget, '**');
+    toolbar.querySelectorAll('.md-btn')[1].onclick = (e) => this.applyFormat(e.currentTarget, '*');
+    toolbar.querySelectorAll('.md-btn')[2].onclick = (e) => this.applyFormat(e.currentTarget, '__');
+    toolbar.querySelectorAll('.md-btn')[3].onclick = (e) => this.toggleEmoji(e.currentTarget);
+
+    const field = multiline ? document.createElement('textarea') : document.createElement('input');
+    if (!multiline) {
+      field.type = 'text';
+      field.className = 'md-input';
+    }
+    field.value = value;
+    field.placeholder = placeholder;
+    if (multiline) field.style.minHeight = minHeight;
+    if (onInput) {
+      field.addEventListener('input', onInput);
+      field.addEventListener('change', onInput);
+    }
+
+    const hint = document.createElement('div');
+    hint.className = 'md-hint';
+    hint.textContent = '**жирный** · *курсив* · __подчёркивание__ · эмодзи 😀';
+
+    const picker = this.createEmojiPicker(field);
+    wrap.appendChild(toolbar);
+    wrap.appendChild(field);
+    if (multiline) wrap.appendChild(hint);
+    wrap.appendChild(picker);
+    return wrap;
+  },
+  getField(el) {
+    const editor = el.closest('.md-editor');
+    return editor ? editor.querySelector('textarea, input.md-input') : null;
+  },
+  applyFormat(btn, marker) {
+    const field = this.getField(btn);
+    if (!field) return;
+    const start = field.selectionStart;
+    const end = field.selectionEnd;
+    const val = field.value;
+    const selected = val.substring(start, end);
+    const before = val.substring(0, start);
+    const after = val.substring(end);
+    if (selected) {
+      field.value = before + marker + selected + marker + after;
+      field.selectionStart = start;
+      field.selectionEnd = start + marker.length + selected.length + marker.length;
+    } else {
+      field.value = before + marker + marker + after;
+      field.selectionStart = field.selectionEnd = start + marker.length;
+    }
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    field.focus();
+  },
+  createEmojiPicker(targetField) {
+    const picker = document.createElement('div');
+    picker.className = 'emoji-picker';
+    EMOJI_LIST.forEach(emoji => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = emoji;
+      btn.onclick = () => {
+        this.insertEmoji(targetField, emoji);
+        picker.classList.remove('open');
+        this.activePicker = null;
+      };
+      picker.appendChild(btn);
+    });
+    return picker;
+  },
+  toggleEmoji(btn) {
+    const picker = btn.closest('.md-editor').querySelector('.emoji-picker');
+    if (this.activePicker && this.activePicker !== picker) {
+      this.activePicker.classList.remove('open');
+    }
+    const isOpen = picker.classList.toggle('open');
+    this.activePicker = isOpen ? picker : null;
+  },
+  insertEmoji(field, emoji) {
+    const start = field.selectionStart ?? field.value.length;
+    const end = field.selectionEnd ?? field.value.length;
+    field.value = field.value.substring(0, start) + emoji + field.value.substring(end);
+    const pos = start + emoji.length;
+    field.selectionStart = field.selectionEnd = pos;
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    field.focus();
+  },
+  createIconField({ value = '', onInput }) {
+    const wrap = document.createElement('div');
+    wrap.className = 'icon-row';
+
+    const preview = document.createElement('span');
+    preview.className = 'icon-preview';
+    preview.textContent = value || '❓';
+
+    const input = document.createElement('input');
+    input.value = value;
+    input.placeholder = 'Эмодзи';
+    input.style.cssText = 'flex:1;padding:12px;border-radius:8px;border:none;font-size:14px;background:rgba(255,255,255,0.15);color:#fff;';
+    const update = () => {
+      preview.textContent = input.value || '❓';
+      if (onInput) onInput();
+    };
+    input.addEventListener('input', update);
+    input.addEventListener('change', update);
+
+    const emojiBtn = document.createElement('button');
+    emojiBtn.type = 'button';
+    emojiBtn.className = 'md-btn md-emoji-btn';
+    emojiBtn.textContent = '😀';
+    emojiBtn.title = 'Выбрать эмодзи';
+
+    const pickerWrap = document.createElement('div');
+    pickerWrap.style.position = 'relative';
+    const picker = this.createEmojiPicker(input);
+    emojiBtn.onclick = () => {
+      if (this.activePicker && this.activePicker !== picker) {
+        this.activePicker.classList.remove('open');
+      }
+      const isOpen = picker.classList.toggle('open');
+      this.activePicker = isOpen ? picker : null;
+    };
+
+    pickerWrap.appendChild(emojiBtn);
+    pickerWrap.appendChild(picker);
+    wrap.appendChild(preview);
+    wrap.appendChild(input);
+    wrap.appendChild(pickerWrap);
+    wrap._input = input;
+    return wrap;
+  }
+};
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.md-editor') && !e.target.closest('.icon-row')) {
+    document.querySelectorAll('.emoji-picker.open').forEach(p => p.classList.remove('open'));
+    mdEditor.activePicker = null;
+  }
+});
+
 const dataManager = {
   data: null,
   load() {
@@ -257,7 +478,12 @@ const admin = {
   },
   renderAll() {
     document.getElementById('adm-title').value = dataManager.data.start.title;
-    document.getElementById('adm-lead').value = dataManager.data.start.lead;
+    const leadWrap = document.getElementById('adm-lead-wrap');
+    leadWrap.innerHTML = '';
+    leadWrap.appendChild(mdEditor.createField({
+      value: dataManager.data.start.lead,
+      onInput: (e) => { dataManager.data.start.lead = e.target.value; }
+    }));
     this.renderQuestions();
     this.renderResults();
   },
@@ -267,14 +493,43 @@ const admin = {
     dataManager.data.questions.forEach((q, qi) => {
       const card = document.createElement('div');
       card.className = 'q-card';
-      let html = `<div class="q-header"><span class="q-num">Вопрос ${qi+1}</span><div class="q-actions"><button onclick="admin.deleteQuestion(${qi})">✖ Удалить</button></div></div>`;
-      html += `<div class="admin-field"><input value="${q.q.replace(/"/g, '&quot;')}" onchange="dataManager.data.questions[${qi}].q=this.value" placeholder="Текст вопроса"></div>`;
-      html += '<div>';
+
+      const header = document.createElement('div');
+      header.className = 'q-header';
+      header.innerHTML = `<span class="q-num">Вопрос ${qi + 1}</span><div class="q-actions"><button type="button">✖ Удалить</button></div>`;
+      header.querySelector('button').onclick = () => this.deleteQuestion(qi);
+
+      const qField = document.createElement('div');
+      qField.className = 'admin-field';
+      qField.appendChild(mdEditor.createField({
+        value: q.q,
+        placeholder: 'Текст вопроса',
+        multiline: false,
+        onInput: (e) => { dataManager.data.questions[qi].q = e.target.value; }
+      }));
+
+      const optsWrap = document.createElement('div');
       q.opts.forEach((o, oi) => {
-        html += `<div class="option-row"><input value="${o.t.replace(/"/g, '&quot;')}" onchange="dataManager.data.questions[${qi}].opts[${oi}].t=this.value" placeholder="Вариант ${o.k}"><span style="font-size:12px; opacity:0.7; min-width:30px;">${o.k}</span></div>`;
+        const row = document.createElement('div');
+        row.className = 'option-row';
+        const editor = mdEditor.createField({
+          value: o.t,
+          placeholder: `Вариант ${o.k}`,
+          multiline: false,
+          onInput: (e) => { dataManager.data.questions[qi].opts[oi].t = e.target.value; }
+        });
+        editor.style.flex = '1';
+        const label = document.createElement('span');
+        label.style.cssText = 'font-size:12px; opacity:0.7; min-width:30px;';
+        label.textContent = o.k;
+        row.appendChild(editor);
+        row.appendChild(label);
+        optsWrap.appendChild(row);
       });
-      html += '</div>';
-      card.innerHTML = html;
+
+      card.appendChild(header);
+      card.appendChild(qField);
+      card.appendChild(optsWrap);
       list.appendChild(card);
     });
   },
@@ -296,17 +551,88 @@ const admin = {
     ed.innerHTML = '';
     ['A','B','V','G'].forEach(k => {
       const r = dataManager.data.results[k];
-      let html = `<div class="q-card"><h3 style="margin-bottom:14px; font-size:16px;">🎯 Результат ${k}</h3>`;
-      html += `<div class="admin-field"><label>Иконка (эмодзи)</label><input value="${r.icon}" onchange="dataManager.data.results['${k}'].icon=this.value"></div>`;
-      html += `<div class="admin-field"><label>Заголовок</label><input value="${r.title}" onchange="dataManager.data.results['${k}'].title=this.value"></div>`;
-      html += `<div class="admin-field"><label>Текст результата</label><textarea onchange="dataManager.data.results['${k}'].text=this.value">${r.text}</textarea></div>`;
-      html += `<div class="admin-field"><label>Подарки и описание</label><textarea onchange="dataManager.data.results['${k}'].gift=this.value">${r.gift}</textarea></div>`;
-      html += '<div class="admin-field"><label>Кнопки действий</label>';
+      const card = document.createElement('div');
+      card.className = 'q-card';
+
+      const title = document.createElement('h3');
+      title.style.cssText = 'margin-bottom:14px; font-size:16px;';
+      title.textContent = `🎯 Результат ${k}`;
+
+      const iconField = document.createElement('div');
+      iconField.className = 'admin-field';
+      iconField.innerHTML = '<label>Иконка (эмодзи)</label>';
+      iconField.appendChild(mdEditor.createIconField({
+        value: r.icon,
+        onInput: () => { dataManager.data.results[k].icon = iconField.querySelector('input').value; }
+      }));
+
+      const titleField = document.createElement('div');
+      titleField.className = 'admin-field';
+      titleField.innerHTML = '<label>Заголовок</label>';
+      titleField.appendChild(mdEditor.createField({
+        value: r.title,
+        multiline: false,
+        onInput: (e) => { dataManager.data.results[k].title = e.target.value; }
+      }));
+
+      const textField = document.createElement('div');
+      textField.className = 'admin-field';
+      textField.innerHTML = '<label>Текст результата</label>';
+      textField.appendChild(mdEditor.createField({
+        value: r.text,
+        onInput: (e) => { dataManager.data.results[k].text = e.target.value; }
+      }));
+
+      const giftField = document.createElement('div');
+      giftField.className = 'admin-field';
+      giftField.innerHTML = '<label>Подарки и описание</label>';
+      giftField.appendChild(mdEditor.createField({
+        value: r.gift,
+        onInput: (e) => { dataManager.data.results[k].gift = e.target.value; }
+      }));
+
+      const buttonsField = document.createElement('div');
+      buttonsField.className = 'admin-field';
+      buttonsField.innerHTML = '<label>Кнопки действий</label>';
       r.buttons.forEach((b, bi) => {
-        html += `<div class="option-row"><input value="${b.t.replace(/"/g, '&quot;')}" onchange="dataManager.data.results['${k}'].buttons[${bi}].t=this.value" placeholder="Текст кнопки"><input value="${b.u}" onchange="dataManager.data.results['${k}'].buttons[${bi}].u=this.value" placeholder="https://" style="flex:1.5;"><button class="btn-icon delete" onclick="admin.deleteButton('${k}',${bi})">✖</button></div>`;
+        const row = document.createElement('div');
+        row.className = 'option-row';
+        const btnEditor = mdEditor.createField({
+          value: b.t,
+          placeholder: 'Текст кнопки',
+          multiline: false,
+          onInput: (e) => { dataManager.data.results[k].buttons[bi].t = e.target.value; }
+        });
+        btnEditor.style.flex = '1';
+        const urlInput = document.createElement('input');
+        urlInput.value = b.u;
+        urlInput.placeholder = 'https://';
+        urlInput.style.flex = '1.5';
+        urlInput.onchange = () => { dataManager.data.results[k].buttons[bi].u = urlInput.value; };
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'btn-icon delete';
+        delBtn.textContent = '✖';
+        delBtn.onclick = () => this.deleteButton(k, bi);
+        row.appendChild(btnEditor);
+        row.appendChild(urlInput);
+        row.appendChild(delBtn);
+        buttonsField.appendChild(row);
       });
-      html += `<button class="btn-icon" onclick="admin.addButton('${k}')">+ Добавить кнопку</button></div></div>`;
-      ed.innerHTML += html;
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'btn-icon';
+      addBtn.textContent = '+ Добавить кнопку';
+      addBtn.onclick = () => this.addButton(k);
+      buttonsField.appendChild(addBtn);
+
+      card.appendChild(title);
+      card.appendChild(iconField);
+      card.appendChild(titleField);
+      card.appendChild(textField);
+      card.appendChild(giftField);
+      card.appendChild(buttonsField);
+      ed.appendChild(card);
     });
   },
   addButton(k) {
@@ -319,7 +645,8 @@ const admin = {
   },
   save() {
     dataManager.data.start.title = document.getElementById('adm-title').value;
-    dataManager.data.start.lead = document.getElementById('adm-lead').value;
+    const leadField = document.querySelector('#adm-lead-wrap textarea');
+    if (leadField) dataManager.data.start.lead = leadField.value;
     dataManager.save();
   },
   resetDefaults() {
