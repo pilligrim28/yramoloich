@@ -7,6 +7,9 @@
 <style>
   :root {
     --primary: #4F46E5;
+    --accent: #fbbf24;
+    --accent-end: #f59e0b;
+    --accent-text: #1f2937;
     --glass: rgba(255,255,255,0.12);
     --glass-border: rgba(255,255,255,0.2);
     --text: #fff;
@@ -72,9 +75,9 @@
     margin-bottom: 12px;
   }
   .btn-primary {
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-    color: #1f2937;
-    box-shadow: 0 8px 24px rgba(251, 191, 36, 0.4);
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-end) 100%);
+    color: var(--accent-text);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   }
   .btn-primary:active { transform: translateY(2px); }
   .btn-secondary {
@@ -88,7 +91,7 @@
   .progress-wrap { margin-bottom: 20px; }
   .progress-info { display: flex; justify-content: space-between; font-size: 13px; opacity: 0.85; margin-bottom: 8px; }
   .progress-bar { height: 6px; background: rgba(255,255,255,0.2); border-radius: 10px; overflow: hidden; }
-  .progress-fill { height: 100%; background: linear-gradient(90deg, #fff, #fbbf24); border-radius: 10px; transition: width 0.4s; width: 0%; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #fff, var(--accent)); border-radius: 10px; transition: width 0.4s; width: 0%; }
 
   .question-text { font-size: 18px; font-weight: 600; line-height: 1.4; margin-bottom: 20px; min-height: 60px; }
   .options { display: flex; flex-direction: column; gap: 10px; }
@@ -131,10 +134,32 @@
   }
   .res-title { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 16px; }
   .res-text { background: rgba(255,255,255,0.1); border-radius: 14px; padding: 18px; font-size: 15px; line-height: 1.6; margin-bottom: 18px; }
-  .res-gift { background: rgba(255,255,255,0.15); border-left: 4px solid #fbbf24; border-radius: 12px; padding: 16px; font-size: 14px; line-height: 1.6; margin-bottom: 20px; }
-  .res-gift strong { display: block; margin-bottom: 6px; font-size: 15px; color: #fbbf24; }
+  .res-gift { background: rgba(255,255,255,0.15); border-left: 4px solid var(--accent); border-radius: 12px; padding: 16px; font-size: 14px; line-height: 1.6; margin-bottom: 20px; }
+  .res-gift strong { display: block; margin-bottom: 6px; font-size: 15px; color: var(--accent); }
   .restart { display: block; text-align: center; margin-top: 16px; font-size: 13px; color: #fff; opacity: 0.75; background: none; border: none; cursor: pointer; text-decoration: underline; }
   .meta { text-align: center; font-size: 12px; opacity: 0.7; margin-top: 16px; }
+
+  .register-title { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+  .register-subtitle { text-align: center; font-size: 14px; opacity: 0.9; margin-bottom: 20px; line-height: 1.5; }
+  .register-form { display: flex; flex-direction: column; gap: 12px; }
+  .form-field label { display: block; font-size: 12px; opacity: 0.85; margin-bottom: 6px; }
+  .form-field input {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    font-size: 15px;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    font-family: inherit;
+  }
+  .form-field input::placeholder { color: rgba(255,255,255,0.5); }
+  .form-field input:focus { outline: none; border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.2); }
+  .form-consent { display: flex; gap: 10px; align-items: flex-start; font-size: 12px; opacity: 0.85; line-height: 1.4; }
+  .form-consent input { margin-top: 3px; flex-shrink: 0; }
+  .form-error { color: #fecaca; font-size: 13px; text-align: center; display: none; }
+  .form-error.show { display: block; }
+  .form-loading { opacity: 0.7; pointer-events: none; }
 
   @media (max-width: 480px) {
     .container { padding: 24px 18px; }
@@ -148,7 +173,7 @@
 <div class="container">
   <!-- START SCREEN -->
   <div class="screen active" id="screen-start">
-    <img src="wheel-balance.png" alt="Колесо баланса" class="hero-image" onerror="this.style.display='none'">
+    <img src="wheel-balance.png" alt="Колесо баланса" class="hero-image" id="hero-image" onerror="this.style.display='none'">
     <h1 id="start-title">Какой из 4-х видов отдыха нужен тебе прямо сейчас?</h1>
     <p class="lead" id="start-lead">Иногда кажется, что нужен просто отдых. Но отдых бывает разным. Кому-то важно восстановить силы в тишине, кому-то нужны <span class="highlight">новые впечатления</span>, общение, движение или смена обстановки.
 
@@ -176,6 +201,32 @@
     </div>
   </div>
 
+  <!-- REGISTER SCREEN -->
+  <div class="screen" id="screen-register">
+    <h2 class="register-title" id="reg-title">🎁 Получите подарок</h2>
+    <p class="register-subtitle" id="reg-subtitle">Оставьте контакты, чтобы увидеть результат теста и получить бонус</p>
+    <form class="register-form" id="register-form" onsubmit="quiz.submitRegister(event)">
+      <div class="form-field">
+        <label for="reg-name">Имя *</label>
+        <input type="text" id="reg-name" name="name" placeholder="Как к вам обращаться" required autocomplete="name">
+      </div>
+      <div class="form-field">
+        <label for="reg-phone">Телефон *</label>
+        <input type="tel" id="reg-phone" name="phone" placeholder="+7 (999) 123-45-67" required autocomplete="tel">
+      </div>
+      <div class="form-field">
+        <label for="reg-email">Email *</label>
+        <input type="email" id="reg-email" name="email" placeholder="email@example.com" required autocomplete="email">
+      </div>
+      <label class="form-consent">
+        <input type="checkbox" id="reg-consent" required>
+        <span>Согласен(на) на обработку персональных данных</span>
+      </label>
+      <p class="form-error" id="reg-error"></p>
+      <button type="submit" class="btn btn-primary" id="reg-submit">✨ Получить результат</button>
+    </form>
+  </div>
+
   <!-- RESULT SCREEN -->
   <div class="screen" id="screen-result">
     <div class="res-icon" id="res-icon">🌿</div>
@@ -189,9 +240,11 @@
 
 <script>
 const DEFAULT_DATA = {
+  theme: 'purple',
   start: {
     title: "Какой из 4-х видов отдыха нужен тебе прямо сейчас?",
-    lead: "Иногда кажется, что нужен просто отдых. Но отдых бывает разным. Кому-то важно восстановить силы в тишине, кому-то нужны новые впечатления, общение, движение или смена обстановки.\n\nПройди тест «Колесо баланса, отдыха и ресурса» и узнай, какой вид отдыха и наполнения ресурсом подходит тебе больше всего сейчас.\n\nВ конце тебя ждут приятные подарки."
+    lead: "Иногда кажется, что нужен просто отдых. Но отдых бывает разным. Кому-то важно восстановить силы в тишине, кому-то нужны новые впечатления, общение, движение или смена обстановки.\n\nПройди тест «Колесо баланса, отдыха и ресурса» и узнай, какой вид отдыха и наполнения ресурсом подходит тебе больше всего сейчас.\n\nВ конце тебя ждут приятные подарки.",
+    image: ''
   },
   questions: [
     { q: "С какой мыслью ты чаще всего просыпаешься?", opts: [{t:"Хочу ещё поспать, сил нет", k:"A"}, {t:"Хочется тепла и поддержки", k:"B"}, {t:"Всё одно и то же, хочется перемен", k:"V"}, {t:"Много мыслей, но нет ясности", k:"G"}] },
@@ -211,14 +264,86 @@ const DEFAULT_DATA = {
     B: { icon: "❤️", title: "Отношения и окружение", text: "Сейчас твой главный ресурс — люди рядом. Поддержка, тёплое общение, новые знакомства и окружение, где тебя понимают.", gift: "🎁 Участвуй в онлайн-нетворкингах «Бизнес на связях» в чате. Читай закреп, пиши визитку, получай новых друзей, партнёров и тёплое общение.", buttons: [{t:"🎟 Получить билет на нетворкинг", u:"#", sec:false}] },
     V: { icon: "✨", title: "Впечатления и эмоции", text: "Тебе сейчас нужны новые эмоции, движение и смена обстановки. Иногда одна поездка или новое окружение дают больше энергии, чем месяцы рутины.", gift: "Мы организуем путешествия и выезды по России и за границу — с атмосферой, отдыхом, нетворкингом и яркими впечатлениями ✈️", buttons: [{t:"🏔 Поездки по России", u:"#", sec:false}, {t:" Выезды с обучением и нетворкингом", u:"#", sec:false}, {t:"🧖 SPA / relax-выезды", u:"#", sec:false}, {t:"🔔 Хочу узнавать обо всех поездках", u:"#", sec:true}] },
     G: { icon: "", title: "Развитие и рост", text: "Сейчас тебе важно вернуть ощущение движения и ясности. Внутри есть желание расти, но не всегда хватает системы и понятного вектора.", gift: "🎁 Мы дарим тебе «Зеркальный спринт» — пространство, где мы соединяем тело, цели, продвижение и рост, уделяя им внимание 25 минут в день.", buttons: [{t:" Войти в Зеркальный спринт", u:"https://t.me/your_bot", sec:false}, {t:"Промокод: РОСТ", u:"#", sec:true}] }
+  },
+  register: {
+    title: "🎁 Получите подарок",
+    subtitle: "Оставьте контакты, чтобы увидеть результат теста и получить бонус",
+    btnText: "✨ Получить результат"
+  },
+  notifications: {
+    apiUrl: "",
+    apiKey: ""
+  }
+};
+
+const THEMES = {
+  purple: { name: 'Фиолетовый', primary: '#4F46E5', bg: ['#4f46e5', '#7c3aed', '#a855f7'], accent: '#fbbf24', accentEnd: '#f59e0b', accentText: '#1f2937' },
+  ocean: { name: 'Океан', primary: '#0891B2', bg: ['#0e7490', '#0891b2', '#22d3ee'], accent: '#fde047', accentEnd: '#facc15', accentText: '#1f2937' },
+  sunset: { name: 'Закат', primary: '#EA580C', bg: ['#c2410c', '#ea580c', '#f472b6'], accent: '#fef08a', accentEnd: '#fde047', accentText: '#1f2937' },
+  forest: { name: 'Лес', primary: '#15803D', bg: ['#14532d', '#15803d', '#4ade80'], accent: '#fde68a', accentEnd: '#fbbf24', accentText: '#1f2937' },
+  midnight: { name: 'Полночь', primary: '#6366F1', bg: ['#1e1b4b', '#312e81', '#4f46e5'], accent: '#a5b4fc', accentEnd: '#818cf8', accentText: '#1e1b4b' }
+};
+
+function applyTheme(themeId) {
+  const t = THEMES[themeId] || THEMES.purple;
+  const root = document.documentElement;
+  root.style.setProperty('--primary', t.primary);
+  root.style.setProperty('--accent', t.accent);
+  root.style.setProperty('--accent-end', t.accentEnd);
+  root.style.setProperty('--accent-text', t.accentText);
+  document.body.style.background = `linear-gradient(135deg, ${t.bg[0]} 0%, ${t.bg[1]} 50%, ${t.bg[2]} 100%)`;
+}
+
+function migrateData(data) {
+  if (!data.theme) data.theme = DEFAULT_DATA.theme;
+  if (!data.start) data.start = {};
+  if (data.start.image === undefined) data.start.image = DEFAULT_DATA.start.image;
+  if (!data.register) data.register = { ...DEFAULT_DATA.register };
+  if (!data.notifications) data.notifications = { ...DEFAULT_DATA.notifications };
+  return data;
+}
+
+const registrationManager = {
+  STORAGE_KEY: 'wheelQuizRegistrations',
+  load() {
+    try {
+      return JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  },
+  saveLocal(reg) {
+    const list = this.load();
+    list.unshift(reg);
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(list));
+  },
+  async sendToServer(reg, settings) {
+    if (!settings.apiUrl) return { ok: true, local: true };
+    const res = await fetch(settings.apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ apiKey: settings.apiKey, ...reg })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Ошибка отправки');
+    return data;
   }
 };
 
 const dataManager = {
   data: null,
-  load() {
+  async load() {
     const stored = localStorage.getItem('wheelQuizData');
-    this.data = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_DATA));
+    this.data = migrateData(stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_DATA)));
+    try {
+      const res = await fetch('quiz-config.json?' + Date.now());
+      if (res.ok) {
+        const cfg = await res.json();
+        if (cfg.notifications?.apiUrl) {
+          this.data.notifications = { ...this.data.notifications, ...cfg.notifications };
+        }
+      }
+    } catch {}
   }
 };
 
@@ -243,13 +368,25 @@ function parseMarkdown(text) {
 const quiz = {
   current: 0,
   answers: [],
+  pendingResult: null,
   init() {
-    dataManager.load();
+    applyTheme(dataManager.data.theme);
     this.renderStart();
+    this.renderRegisterTexts();
+  },
+  renderRegisterTexts() {
+    const r = dataManager.data.register || DEFAULT_DATA.register;
+    document.getElementById('reg-title').textContent = r.title;
+    document.getElementById('reg-subtitle').textContent = r.subtitle;
+    document.getElementById('reg-submit').textContent = r.btnText;
   },
   renderStart() {
     document.getElementById('start-title').textContent = dataManager.data.start.title;
     document.getElementById('start-lead').innerHTML = parseMarkdown(dataManager.data.start.lead);
+    const hero = document.getElementById('hero-image');
+    const src = dataManager.data.start.image || 'wheel-balance.png';
+    hero.style.display = '';
+    hero.src = src;
   },
   start() {
     this.current = 0;
@@ -289,17 +426,11 @@ const quiz = {
       this.current++;
       this.renderQ();
     } else {
-      this.showResult();
+      this.prepareResult();
     }
   },
-  prev() {
-    if (this.current > 0) {
-      this.current--;
-      this.renderQ();
-    }
-  },
-  showResult() {
-    const counts = {A:0, B:0, V:0, G:0};
+  prepareResult() {
+    const counts = { A: 0, B: 0, V: 0, G: 0 };
     this.answers.forEach((ans, qIdx) => {
       if (ans !== null) counts[dataManager.data.questions[qIdx].opts[ans].k]++;
     });
@@ -308,6 +439,61 @@ const quiz = {
     Object.entries(counts).forEach(([key, count]) => {
       if (count > maxCount) { maxCount = count; winner = key; }
     });
+    const r = dataManager.data.results[winner];
+    this.pendingResult = {
+      result: winner,
+      resultTitle: r.title,
+      scores: counts
+    };
+    document.getElementById('register-form').reset();
+    document.getElementById('reg-error').classList.remove('show');
+    switchScreen('screen-register');
+  },
+  async submitRegister(e) {
+    e.preventDefault();
+    const form = document.getElementById('register-form');
+    const errEl = document.getElementById('reg-error');
+    const btn = document.getElementById('reg-submit');
+    errEl.classList.remove('show');
+    form.classList.remove('form-loading');
+
+    const reg = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      date: new Date().toISOString(),
+      name: document.getElementById('reg-name').value.trim(),
+      phone: document.getElementById('reg-phone').value.trim(),
+      email: document.getElementById('reg-email').value.trim(),
+      result: this.pendingResult.result,
+      resultTitle: this.pendingResult.resultTitle,
+      scores: this.pendingResult.scores
+    };
+
+    if (!reg.name || !reg.phone || !reg.email) {
+      errEl.textContent = 'Заполните все поля';
+      errEl.classList.add('show');
+      return;
+    }
+
+    form.classList.add('form-loading');
+    btn.textContent = 'Отправка...';
+
+    try {
+      registrationManager.saveLocal(reg);
+      await registrationManager.sendToServer(reg, dataManager.data.notifications);
+      this.showResult();
+    } catch (err) {
+      registrationManager.saveLocal(reg);
+      errEl.textContent = 'Не удалось отправить уведомление, но результат доступен. ' + (err.message || '');
+      errEl.classList.add('show');
+      setTimeout(() => this.showResult(), 1500);
+    } finally {
+      form.classList.remove('form-loading');
+      btn.textContent = dataManager.data.register?.btnText || '✨ Получить результат';
+    }
+  },
+  showResult() {
+    if (!this.pendingResult) return;
+    const winner = this.pendingResult.result;
     const r = dataManager.data.results[winner];
     document.getElementById('res-icon').textContent = r.icon;
     document.getElementById('res-title').textContent = r.title;
@@ -326,7 +512,14 @@ const quiz = {
     });
     switchScreen('screen-result');
   },
+  prev() {
+    if (this.current > 0) {
+      this.current--;
+      this.renderQ();
+    }
+  },
   restart() {
+    this.pendingResult = null;
     switchScreen('screen-start');
   }
 };
@@ -337,7 +530,10 @@ function switchScreen(id) {
   window.scrollTo({top: 0, behavior: 'smooth'});
 }
 
-quiz.init();
+(async function() {
+  await dataManager.load();
+  quiz.init();
+})();
 </script>
 </body>
 </html>

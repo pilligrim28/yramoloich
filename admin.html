@@ -156,6 +156,46 @@
 
   .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 
+  .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-bottom: 8px; }
+  .theme-card {
+    background: rgba(0,0,0,0.2);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .theme-card:hover { background: rgba(255,255,255,0.1); }
+  .theme-card.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.4); }
+  .theme-swatch { height: 44px; border-radius: 8px; margin-bottom: 8px; }
+  .theme-name { font-size: 12px; font-weight: 600; }
+
+  .image-upload-area { display: flex; flex-direction: column; gap: 12px; }
+  .image-preview-wrap { text-align: center; }
+  .image-preview {
+    max-width: 220px;
+    max-height: 160px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    object-fit: cover;
+  }
+  .image-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .image-actions label { flex: 1; min-width: 140px; cursor: pointer; text-align: center; margin-bottom: 0; }
+  .image-hint { font-size: 11px; opacity: 0.55; margin-top: 4px; }
+
+  .reg-table-wrap { overflow-x: auto; margin-bottom: 16px; }
+  .reg-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .reg-table th, .reg-table td { padding: 10px 8px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.15); }
+  .reg-table th { font-size: 11px; opacity: 0.7; font-weight: 600; }
+  .reg-table tr:hover td { background: rgba(255,255,255,0.05); }
+  .reg-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; background: rgba(255,255,255,0.2); font-size: 11px; font-weight: 600; }
+  .reg-empty { text-align: center; padding: 40px 20px; opacity: 0.7; font-size: 14px; }
+  .reg-stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .reg-stat { background: rgba(0,0,0,0.2); border-radius: 10px; padding: 12px 16px; flex: 1; min-width: 100px; text-align: center; }
+  .reg-stat-num { font-size: 22px; font-weight: 700; }
+  .reg-stat-label { font-size: 11px; opacity: 0.7; margin-top: 4px; }
+
   @media (max-width: 600px) {
     .container { padding: 24px 18px; }
     .admin-lock input { width: 100%; }
@@ -188,8 +228,11 @@
 
     <div class="admin-tabs">
       <button class="admin-tab active" onclick="admin.switchTab('start', this)"> Старт</button>
+      <button class="admin-tab" onclick="admin.switchTab('design', this)">🎨 Оформление</button>
       <button class="admin-tab" onclick="admin.switchTab('questions', this)">❓ Вопросы</button>
       <button class="admin-tab" onclick="admin.switchTab('results', this)">🎁 Результаты</button>
+      <button class="admin-tab" onclick="admin.switchTab('registrations', this)">👥 Регистрации</button>
+      <button class="admin-tab" onclick="admin.switchTab('notifications', this)">📬 Уведомления</button>
       <button class="admin-tab" onclick="admin.switchTab('backup', this)">💾 Бэкап</button>
     </div>
 
@@ -202,6 +245,32 @@
       <div class="admin-field">
         <label>Подзаголовок (описание теста)</label>
         <div id="adm-lead-wrap"></div>
+      </div>
+      <button class="btn btn-primary" onclick="admin.save()">💾 Сохранить изменения</button>
+    </div>
+
+    <!-- TAB: DESIGN -->
+    <div id="tab-design" class="admin-panel">
+      <div class="admin-field">
+        <label>Цветовая тема</label>
+        <div class="theme-grid" id="theme-grid"></div>
+        <p class="image-hint">Тема применяется ко всему тесту: фон, кнопки, акценты</p>
+      </div>
+      <div class="admin-field">
+        <label>Картинка на главном экране</label>
+        <div class="image-upload-area">
+          <div class="image-preview-wrap">
+            <img id="hero-preview" class="image-preview" src="wheel-balance.png" alt="Превью" onerror="this.style.display='none'">
+          </div>
+          <div class="image-actions">
+            <label class="btn btn-secondary" style="display:block; padding:12px;">
+              📷 Загрузить картинку
+              <input type="file" accept="image/*" onchange="admin.uploadHeroImage(this)" style="display:none;">
+            </label>
+            <button type="button" class="btn btn-secondary" style="flex:1; margin-bottom:0;" onclick="admin.removeHeroImage()">🗑 Убрать картинку</button>
+          </div>
+          <p class="image-hint">JPG, PNG или WebP до 2 МБ. Если картинка не задана — используется стандартная.</p>
+        </div>
       </div>
       <button class="btn btn-primary" onclick="admin.save()">💾 Сохранить изменения</button>
     </div>
@@ -219,6 +288,56 @@
     <!-- TAB: RESULTS -->
     <div id="tab-results" class="admin-panel">
       <div id="results-editor"></div>
+      <button class="btn btn-primary" onclick="admin.save()">💾 Сохранить изменения</button>
+    </div>
+
+    <!-- TAB: REGISTRATIONS -->
+    <div id="tab-registrations" class="admin-panel">
+      <div class="reg-stats" id="reg-stats"></div>
+      <div class="admin-actions" style="margin-top:0; margin-bottom:16px;">
+        <button class="btn btn-secondary btn-small" onclick="admin.refreshRegistrations()">🔄 Обновить</button>
+        <button class="btn btn-secondary btn-small" onclick="admin.exportRegistrations()">📥 Скачать CSV</button>
+        <button class="btn btn-secondary btn-small" onclick="admin.clearRegistrations()">🗑 Очистить список</button>
+      </div>
+      <div class="reg-table-wrap" id="registrations-list"></div>
+      <p class="image-hint">Для сбора заявок со всех устройств настройте API во вкладке «Уведомления» (Google Таблица + почта + ВК).</p>
+    </div>
+
+    <!-- TAB: NOTIFICATIONS -->
+    <div id="tab-notifications" class="admin-panel">
+      <div class="q-card" style="margin-bottom:16px;">
+        <h3 style="font-size:15px; margin-bottom:12px;">📬 Отправка на почту и в ВКонтакте</h3>
+        <p style="font-size:13px; opacity:0.85; line-height:1.6; margin-bottom:14px;">
+          Используйте бесплатный скрипт <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;">registration-api.gs</code> в Google Таблице.
+          Он сохраняет заявки, отправляет письмо на почту и публикует уведомление на стене группы ВК.
+          После настройки скачайте <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;">quiz-config.json</code> и загрузите на сервер.
+        </p>
+        <div class="admin-field">
+          <label>URL веб-приложения (Google Apps Script)</label>
+          <input id="adm-api-url" placeholder="https://script.google.com/macros/s/.../exec">
+        </div>
+        <div class="admin-field">
+          <label>Секретный ключ API</label>
+          <input id="adm-api-key" type="password" placeholder="Тот же ключ, что в registration-api.gs">
+        </div>
+        <button type="button" class="btn btn-secondary btn-small" onclick="admin.testApi()">🔌 Проверить подключение</button>
+        <button type="button" class="btn btn-secondary btn-small" onclick="admin.exportQuizConfig()">📥 Скачать quiz-config.json</button>
+      </div>
+      <div class="q-card">
+        <h3 style="font-size:15px; margin-bottom:12px;">📝 Тексты формы регистрации</h3>
+        <div class="admin-field">
+          <label>Заголовок</label>
+          <input id="adm-reg-title">
+        </div>
+        <div class="admin-field">
+          <label>Подзаголовок</label>
+          <textarea id="adm-reg-subtitle" style="min-height:70px;"></textarea>
+        </div>
+        <div class="admin-field">
+          <label>Текст кнопки</label>
+          <input id="adm-reg-btn">
+        </div>
+      </div>
       <button class="btn btn-primary" onclick="admin.save()">💾 Сохранить изменения</button>
     </div>
 
@@ -246,9 +365,11 @@
 
 <script>
 const DEFAULT_DATA = {
+  theme: 'purple',
   start: {
     title: "Какой из 4-х видов отдыха нужен тебе прямо сейчас?",
-    lead: "Иногда кажется, что нужен просто отдых. Но отдых бывает разным. Кому-то важно восстановить силы в тишине, кому-то нужны новые впечатления, общение, движение или смена обстановки.\n\nПройди тест «Колесо баланса, отдыха и ресурса» и узнай, какой вид отдыха и наполнения ресурсом подходит тебе больше всего сейчас.\n\nВ конце тебя ждут приятные подарки."
+    lead: "Иногда кажется, что нужен просто отдых. Но отдых бывает разным. Кому-то важно восстановить силы в тишине, кому-то нужны новые впечатления, общение, движение или смена обстановки.\n\nПройди тест «Колесо баланса, отдыха и ресурса» и узнай, какой вид отдыха и наполнения ресурсом подходит тебе больше всего сейчас.\n\nВ конце тебя ждут приятные подарки.",
+    image: ''
   },
   questions: [
     { q: "С какой мыслью ты чаще всего просыпаешься?", opts: [{t:"Хочу ещё поспать, сил нет", k:"A"}, {t:"Хочется тепла и поддержки", k:"B"}, {t:"Всё одно и то же, хочется перемен", k:"V"}, {t:"Много мыслей, но нет ясности", k:"G"}] },
@@ -268,6 +389,71 @@ const DEFAULT_DATA = {
     B: { icon: "❤️", title: "Отношения и окружение", text: "Сейчас твой главный ресурс — люди рядом. Поддержка, тёплое общение, новые знакомства и окружение, где тебя понимают.", gift: "🎁 Участвуй в онлайн-нетворкингах «Бизнес на связях» в чате. Читай закреп, пиши визитку, получай новых друзей, партнёров и тёплое общение.", buttons: [{t:"🎟 Получить билет на нетворкинг", u:"#", sec:false}] },
     V: { icon: "✨", title: "Впечатления и эмоции", text: "Тебе сейчас нужны новые эмоции, движение и смена обстановки. Иногда одна поездка или новое окружение дают больше энергии, чем месяцы рутины.", gift: "Мы организуем путешествия и выезды по России и за границу — с атмосферой, отдыхом, нетворкингом и яркими впечатлениями ✈️", buttons: [{t:"🏔 Поездки по России", u:"#", sec:false}, {t:"🎓 Выезды с обучением и нетворкингом", u:"#", sec:false}, {t:"🧖 SPA / relax-выезды", u:"#", sec:false}, {t:"🔔 Хочу узнавать обо всех поездках", u:"#", sec:true}] },
     G: { icon: "🚀", title: "Развитие и рост", text: "Сейчас тебе важно вернуть ощущение движения и ясности. Внутри есть желание расти, но не всегда хватает системы и понятного вектора.", gift: "🎁 Мы дарим тебе «Зеркальный спринт» — пространство, где мы соединяем тело, цели, продвижение и рост, уделяя им внимание 25 минут в день.", buttons: [{t:"🚀 Войти в Зеркальный спринт", u:"https://t.me/your_bot", sec:false}, {t:"Промокод: РОСТ", u:"#", sec:true}] }
+  },
+  register: {
+    title: "🎁 Получите подарок",
+    subtitle: "Оставьте контакты, чтобы увидеть результат теста и получить бонус",
+    btnText: "✨ Получить результат"
+  },
+  notifications: {
+    apiUrl: "",
+    apiKey: ""
+  }
+};
+
+const THEMES = {
+  purple: { name: 'Фиолетовый', primary: '#4F46E5', bg: ['#4f46e5', '#7c3aed', '#a855f7'], accent: '#fbbf24', accentEnd: '#f59e0b', accentText: '#1f2937' },
+  ocean: { name: 'Океан', primary: '#0891B2', bg: ['#0e7490', '#0891b2', '#22d3ee'], accent: '#fde047', accentEnd: '#facc15', accentText: '#1f2937' },
+  sunset: { name: 'Закат', primary: '#EA580C', bg: ['#c2410c', '#ea580c', '#f472b6'], accent: '#fef08a', accentEnd: '#fde047', accentText: '#1f2937' },
+  forest: { name: 'Лес', primary: '#15803D', bg: ['#14532d', '#15803d', '#4ade80'], accent: '#fde68a', accentEnd: '#fbbf24', accentText: '#1f2937' },
+  midnight: { name: 'Полночь', primary: '#6366F1', bg: ['#1e1b4b', '#312e81', '#4f46e5'], accent: '#a5b4fc', accentEnd: '#818cf8', accentText: '#1e1b4b' }
+};
+
+function applyTheme(themeId) {
+  const t = THEMES[themeId] || THEMES.purple;
+  const root = document.documentElement;
+  root.style.setProperty('--primary', t.primary);
+  root.style.setProperty('--accent', t.accent);
+  root.style.setProperty('--accent-end', t.accentEnd);
+  root.style.setProperty('--accent-text', t.accentText);
+  document.body.style.background = `linear-gradient(135deg, ${t.bg[0]} 0%, ${t.bg[1]} 50%, ${t.bg[2]} 100%)`;
+}
+
+function migrateData(data) {
+  if (!data.theme) data.theme = DEFAULT_DATA.theme;
+  if (!data.start) data.start = {};
+  if (data.start.image === undefined) data.start.image = DEFAULT_DATA.start.image;
+  if (!data.register) data.register = { ...DEFAULT_DATA.register };
+  if (!data.notifications) data.notifications = { ...DEFAULT_DATA.notifications };
+  return data;
+}
+
+const registrationManager = {
+  STORAGE_KEY: 'wheelQuizRegistrations',
+  loadLocal() {
+    try {
+      return JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  },
+  saveLocal(list) {
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(list));
+  },
+  async fetchFromServer(settings) {
+    if (!settings.apiUrl || !settings.apiKey) return [];
+    const url = settings.apiUrl + '?action=list&apiKey=' + encodeURIComponent(settings.apiKey);
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Ошибка загрузки');
+    return data.registrations || [];
+  },
+  formatDate(iso) {
+    try {
+      return new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return iso;
+    }
   }
 };
 
@@ -436,7 +622,7 @@ const dataManager = {
   data: null,
   load() {
     const stored = localStorage.getItem('wheelQuizData');
-    this.data = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_DATA));
+    this.data = migrateData(stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_DATA)));
   },
   save() {
     localStorage.setItem('wheelQuizData', JSON.stringify(this.data));
@@ -475,6 +661,9 @@ const admin = {
     document.getElementById('tab-' + tab).classList.add('active');
     if (tab === 'questions') this.renderQuestions();
     if (tab === 'results') this.renderResults();
+    if (tab === 'design') this.renderDesign();
+    if (tab === 'registrations') this.renderRegistrations();
+    if (tab === 'notifications') this.renderNotifications();
   },
   renderAll() {
     document.getElementById('adm-title').value = dataManager.data.start.title;
@@ -484,8 +673,170 @@ const admin = {
       value: dataManager.data.start.lead,
       onInput: (e) => { dataManager.data.start.lead = e.target.value; }
     }));
+    applyTheme(dataManager.data.theme);
+    this.renderDesign();
+    this.renderNotifications();
     this.renderQuestions();
     this.renderResults();
+  },
+  renderNotifications() {
+    const n = dataManager.data.notifications || DEFAULT_DATA.notifications;
+    const r = dataManager.data.register || DEFAULT_DATA.register;
+    const urlEl = document.getElementById('adm-api-url');
+    const keyEl = document.getElementById('adm-api-key');
+    if (urlEl) urlEl.value = n.apiUrl || '';
+    if (keyEl) keyEl.value = n.apiKey || '';
+    const titleEl = document.getElementById('adm-reg-title');
+    const subEl = document.getElementById('adm-reg-subtitle');
+    const btnEl = document.getElementById('adm-reg-btn');
+    if (titleEl) titleEl.value = r.title || '';
+    if (subEl) subEl.value = r.subtitle || '';
+    if (btnEl) btnEl.value = r.btnText || '';
+  },
+  async renderRegistrations() {
+    const container = document.getElementById('registrations-list');
+    const statsEl = document.getElementById('reg-stats');
+    if (!container) return;
+
+    container.innerHTML = '<p class="reg-empty">Загрузка...</p>';
+    let list = registrationManager.loadLocal();
+
+    try {
+      const serverList = await registrationManager.fetchFromServer(dataManager.data.notifications);
+      if (serverList.length) {
+        const ids = new Set(list.map(r => r.id));
+        serverList.forEach(r => {
+          if (!ids.has(r.id)) list.push(r);
+        });
+        list.sort((a, b) => new Date(b.date) - new Date(a.date));
+      }
+    } catch (e) {
+      console.warn('Server registrations:', e.message);
+    }
+
+    const total = list.length;
+    const byResult = { A: 0, B: 0, V: 0, G: 0 };
+    list.forEach(r => { if (byResult[r.result] !== undefined) byResult[r.result]++; });
+
+    statsEl.innerHTML = `
+      <div class="reg-stat"><div class="reg-stat-num">${total}</div><div class="reg-stat-label">Всего</div></div>
+      <div class="reg-stat"><div class="reg-stat-num">${byResult.A}</div><div class="reg-stat-label">A — Релакс</div></div>
+      <div class="reg-stat"><div class="reg-stat-num">${byResult.B}</div><div class="reg-stat-label">B — Отношения</div></div>
+      <div class="reg-stat"><div class="reg-stat-num">${byResult.V}</div><div class="reg-stat-label">V — Впечатления</div></div>
+      <div class="reg-stat"><div class="reg-stat-num">${byResult.G}</div><div class="reg-stat-label">G — Рост</div></div>
+    `;
+
+    if (!total) {
+      container.innerHTML = '<p class="reg-empty">Пока нет регистраций.<br>Пройдите тест на главной странице или настройте API.</p>';
+      return;
+    }
+
+    let html = '<table class="reg-table"><thead><tr><th>Дата</th><th>Имя</th><th>Телефон</th><th>Email</th><th>Результат</th></tr></thead><tbody>';
+    list.forEach(r => {
+      html += `<tr>
+        <td>${registrationManager.formatDate(r.date)}</td>
+        <td>${escapeHtml(r.name)}</td>
+        <td>${escapeHtml(r.phone)}</td>
+        <td>${escapeHtml(r.email)}</td>
+        <td><span class="reg-badge">${r.result} — ${escapeHtml(r.resultTitle || '')}</span></td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+    this._registrationsCache = list;
+  },
+  refreshRegistrations() {
+    this.renderRegistrations();
+    toast('🔄 Список обновлён');
+  },
+  exportRegistrations() {
+    const list = this._registrationsCache || registrationManager.loadLocal();
+    if (!list.length) { alert('Нет данных для экспорта'); return; }
+    const header = 'Дата;Имя;Телефон;Email;Результат;Название';
+    const rows = list.map(r =>
+      [r.date, r.name, r.phone, r.email, r.result, r.resultTitle || ''].map(v => '"' + String(v).replace(/"/g, '""') + '"').join(';')
+    );
+    const blob = new Blob(['\uFEFF' + header + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'registrations-' + new Date().toISOString().slice(0, 10) + '.csv';
+    a.click();
+    toast('📥 CSV скачан');
+  },
+  clearRegistrations() {
+    if (!confirm('Удалить все локальные регистрации из браузера?')) return;
+    registrationManager.saveLocal([]);
+    this.renderRegistrations();
+    toast('🗑 Локальный список очищен');
+  },
+  async testApi() {
+    const url = document.getElementById('adm-api-url').value.trim();
+    const key = document.getElementById('adm-api-key').value.trim();
+    if (!url || !key) { alert('Укажите URL и ключ API'); return; }
+    try {
+      const res = await fetch(url + '?apiKey=' + encodeURIComponent(key));
+      const data = await res.json();
+      if (data.ok) toast('✅ Подключение успешно!');
+      else alert('❌ ' + (data.error || 'Ошибка'));
+    } catch (e) {
+      alert('❌ Не удалось подключиться: ' + e.message);
+    }
+  },
+  exportQuizConfig() {
+    const url = document.getElementById('adm-api-url').value.trim();
+    const key = document.getElementById('adm-api-key').value.trim();
+    const cfg = { notifications: { apiUrl: url, apiKey: key } };
+    const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'quiz-config.json';
+    a.click();
+    toast('📥 Загрузите файл на сервер рядом с index.html');
+  },
+  renderDesign() {
+    const grid = document.getElementById('theme-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    Object.entries(THEMES).forEach(([id, t]) => {
+      const card = document.createElement('div');
+      card.className = 'theme-card' + (dataManager.data.theme === id ? ' active' : '');
+      card.innerHTML = `<div class="theme-swatch" style="background:linear-gradient(135deg,${t.bg.join(',')})"></div><div class="theme-name">${t.name}</div>`;
+      card.onclick = () => {
+        dataManager.data.theme = id;
+        applyTheme(id);
+        this.renderDesign();
+      };
+      grid.appendChild(card);
+    });
+
+    const preview = document.getElementById('hero-preview');
+    const img = dataManager.data.start.image;
+    if (preview) {
+      preview.style.display = '';
+      preview.src = img || 'wheel-balance.png';
+    }
+  },
+  uploadHeroImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert('⚠️ Файл слишком большой. Максимум 2 МБ.');
+      input.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      dataManager.data.start.image = e.target.result;
+      this.renderDesign();
+      toast('🖼 Картинка загружена');
+    };
+    reader.readAsDataURL(file);
+    input.value = '';
+  },
+  removeHeroImage() {
+    dataManager.data.start.image = '';
+    this.renderDesign();
+    toast('🗑 Картинка удалена');
   },
   renderQuestions() {
     const list = document.getElementById('questions-list');
@@ -647,6 +998,18 @@ const admin = {
     dataManager.data.start.title = document.getElementById('adm-title').value;
     const leadField = document.querySelector('#adm-lead-wrap textarea');
     if (leadField) dataManager.data.start.lead = leadField.value;
+    const urlEl = document.getElementById('adm-api-url');
+    const keyEl = document.getElementById('adm-api-key');
+    if (urlEl) {
+      dataManager.data.notifications.apiUrl = urlEl.value.trim();
+      dataManager.data.notifications.apiKey = keyEl ? keyEl.value.trim() : '';
+    }
+    const titleEl = document.getElementById('adm-reg-title');
+    if (titleEl) {
+      dataManager.data.register.title = titleEl.value;
+      dataManager.data.register.subtitle = document.getElementById('adm-reg-subtitle').value;
+      dataManager.data.register.btnText = document.getElementById('adm-reg-btn').value;
+    }
     dataManager.save();
   },
   resetDefaults() {
@@ -668,7 +1031,7 @@ const admin = {
     const reader = new FileReader();
     reader.onload = e => {
       try {
-        dataManager.data = JSON.parse(e.target.result);
+        dataManager.data = migrateData(JSON.parse(e.target.result));
         dataManager.save();
         this.renderAll();
         toast('✅ Загружено!');
@@ -699,6 +1062,14 @@ function toast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 </script>
 </body>
