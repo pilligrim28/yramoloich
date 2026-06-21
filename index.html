@@ -157,9 +157,103 @@
   .form-field input:focus { outline: none; border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.2); }
   .form-consent { display: flex; gap: 10px; align-items: flex-start; font-size: 12px; opacity: 0.85; line-height: 1.4; }
   .form-consent input { margin-top: 3px; flex-shrink: 0; }
+  .form-consent-link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #fff;
+    text-decoration: underline;
+    cursor: pointer;
+    font: inherit;
+    opacity: 1;
+  }
+  .form-consent-link:hover { opacity: 0.85; }
   .form-error { color: #fecaca; font-size: 13px; text-align: center; display: none; }
   .form-error.show { display: block; }
   .form-loading { opacity: 0.7; pointer-events: none; }
+
+  .privacy-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(15, 10, 40, 0.75);
+    backdrop-filter: blur(6px);
+    padding: 16px;
+    align-items: center;
+    justify-content: center;
+  }
+  .privacy-overlay.open { display: flex; }
+  .privacy-modal {
+    width: 100%;
+    max-width: 560px;
+    max-height: 85vh;
+    background: #fff;
+    color: #1f2937;
+    border-radius: 20px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.45);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: modalIn 0.25s ease;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.96) translateY(12px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .privacy-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
+  }
+  .privacy-header h3 { font-size: 16px; font-weight: 700; color: #4F46E5; line-height: 1.3; }
+  .privacy-close {
+    background: #f3f4f6;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    color: #6b7280;
+    flex-shrink: 0;
+  }
+  .privacy-close:hover { background: #e5e7eb; color: #111; }
+  .privacy-body {
+    padding: 20px;
+    overflow-y: auto;
+    font-size: 13px;
+    line-height: 1.65;
+    color: #374151;
+  }
+  .privacy-body h4 { font-size: 14px; font-weight: 700; color: #111827; margin: 18px 0 8px; }
+  .privacy-body h4:first-child { margin-top: 0; }
+  .privacy-body p { margin-bottom: 10px; }
+  .privacy-body ul { margin: 8px 0 10px 18px; }
+  .privacy-body li { margin-bottom: 4px; }
+  .privacy-body a { color: #4F46E5; word-break: break-all; }
+  .privacy-footer {
+    padding: 14px 20px;
+    border-top: 1px solid #e5e7eb;
+    flex-shrink: 0;
+  }
+  .privacy-footer button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-end) 100%);
+    color: var(--accent-text);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
 
   @media (max-width: 480px) {
     .container { padding: 24px 18px; }
@@ -220,7 +314,7 @@
       </div>
       <label class="form-consent">
         <input type="checkbox" id="reg-consent" required>
-        <span>Согласен(на) на обработку персональных данных</span>
+        <span>Согласен(на) на <button type="button" class="form-consent-link" onclick="openPrivacyModal()">обработку персональных данных</button> в соответствии с политикой конфиденциальности</span>
       </label>
       <p class="form-error" id="reg-error"></p>
       <button type="submit" class="btn btn-primary" id="reg-submit">✨ Получить результат</button>
@@ -235,6 +329,87 @@
     <div class="res-gift" id="res-gift"></div>
     <div id="res-buttons"></div>
     <button class="restart" onclick="quiz.restart()">🔄 Пройти тест заново</button>
+  </div>
+</div>
+
+<!-- Privacy Policy Modal -->
+<div class="privacy-overlay" id="privacy-overlay" onclick="if(event.target===this)closePrivacyModal()">
+  <div class="privacy-modal" role="dialog" aria-labelledby="privacy-title" aria-modal="true">
+    <div class="privacy-header">
+      <h3 id="privacy-title">Политика конфиденциальности</h3>
+      <button type="button" class="privacy-close" onclick="closePrivacyModal()" aria-label="Закрыть">×</button>
+    </div>
+    <div class="privacy-body">
+      <p><strong>Политика конфиденциальности в отношении обработки персональных данных</strong></p>
+
+      <h4>1. Общие положения</h4>
+      <p>Настоящая политика обработки персональных данных составлена в соответствии с требованиями Федерального закона от 27.07.2006 №152-ФЗ «О персональных данных» и определяет порядок обработки персональных данных и меры по обеспечению безопасности персональных данных индивидуального предпринимателя Ярмолич Ирины Николаевны (далее — Оператор).</p>
+      <p>Оператор ставит своей важнейшей целью и условием осуществления своей деятельности соблюдение прав и свобод человека и гражданина при обработке его персональных данных, в том числе защиту прав на неприкосновенность частной жизни, личную и семейную тайну.</p>
+      <p>Настоящая политика Оператора в отношении обработки персональных данных (далее — Политика) применяется ко всей информации, которую Оператор может получить о посетителях:</p>
+      <ul>
+        <li>веб-сайта <a href="https://бизнеснасвязях.рф" target="_blank" rel="noopener">https://бизнеснасвязях.рф</a></li>
+        <li>сообщества ВКонтакте <a href="https://vk.com/biznesfitnes" target="_blank" rel="noopener">https://vk.com/biznesfitnes</a></li>
+      </ul>
+
+      <h4>2. Основные понятия, используемые в Политике</h4>
+      <p><strong>Автоматизированная обработка персональных данных</strong> — обработка персональных данных с помощью средств вычислительной техники.</p>
+      <p><strong>Блокирование персональных данных</strong> — временное прекращение обработки персональных данных (за исключением случаев, если обработка необходима для уточнения персональных данных).</p>
+      <p><strong>Веб-сайт</strong> — совокупность графических и информационных материалов, а также программ для ЭВМ и баз данных, обеспечивающих их доступность в сети интернет по сетевому адресу <a href="https://бизнеснасвязях.рф" target="_blank" rel="noopener">https://бизнеснасвязях.рф</a>.</p>
+      <p><strong>Информационная система персональных данных</strong> — совокупность содержащихся в базах данных персональных данных и обеспечивающих их обработку информационных технологий и технических средств.</p>
+      <p><strong>Обезличивание персональных данных</strong> — действия, в результате которых невозможно определить без использования дополнительной информации принадлежность персональных данных конкретному Пользователю.</p>
+      <p><strong>Обработка персональных данных</strong> — любое действие (операция) или совокупность действий (операций), совершаемых с использованием средств автоматизации или без использования таких средств с персональными данными.</p>
+      <p><strong>Оператор</strong> — индивидуальный предприниматель, самостоятельно организующий и осуществляющий обработку персональных данных.</p>
+      <p><strong>Персональные данные</strong> — любая информация, относящаяся к определённому или определяемому Пользователю.</p>
+      <p><strong>Пользователь</strong> — любой посетитель сайта и/или участник сообщества.</p>
+      <p><strong>Предоставление персональных данных</strong> — действия, направленные на раскрытие персональных данных определённому лицу.</p>
+      <p><strong>Распространение персональных данных</strong> — действия, направленные на раскрытие персональных данных неопределённому кругу лиц.</p>
+      <p><strong>Трансграничная передача персональных данных</strong> — передача персональных данных на территорию иностранного государства.</p>
+      <p><strong>Уничтожение персональных данных</strong> — действия, в результате которых персональные данные уничтожаются без возможности восстановления.</p>
+
+      <h4>3. Оператор может обрабатывать следующие персональные данные Пользователя</h4>
+      <ul>
+        <li>имя</li>
+        <li>номер телефона</li>
+        <li>аккаунт / ник в социальных сетях</li>
+        <li>город</li>
+      </ul>
+      <p>Также Оператор может обрабатывать иные данные, которые Пользователь предоставляет добровольно при регистрации, заполнении форм или в процессе общения. Вышеперечисленные данные объединены общим понятием «Персональные данные».</p>
+
+      <h4>4. Цели обработки персональных данных</h4>
+      <p>Цель обработки персональных данных Пользователя:</p>
+      <ul>
+        <li>регистрация на онлайн-мероприятия и программы (в том числе «Зеркальный спринт»)</li>
+        <li>участие в обучении</li>
+        <li>предоставление доступа к материалам</li>
+        <li>уточнение деталей участия</li>
+        <li>обработка заявок и обращений</li>
+        <li>проведение консультаций</li>
+      </ul>
+      <p>Также Оператор имеет право направлять Пользователю уведомления о новых продуктах и услугах, специальных предложениях и различных событиях. Пользователь может отказаться от получения информационных сообщений, направив Оператору письмо на электронную почту <a href="mailto:biznasv@yandex.ru">biznasv@yandex.ru</a> с пометкой «Отказ от уведомлений».</p>
+
+      <h4>5. Правовые основания обработки персональных данных</h4>
+      <p>Оператор обрабатывает персональные данные Пользователя только в случае их добровольного предоставления Пользователем через формы регистрации, сообщения или иные способы взаимодействия. Передавая свои персональные данные, Пользователь выражает согласие с данной Политикой.</p>
+
+      <h4>6. Порядок сбора, хранения, передачи и других видов обработки персональных данных</h4>
+      <p>Безопасность персональных данных обеспечивается путём реализации правовых, организационных и технических мер. Оператор обеспечивает сохранность персональных данных и принимает меры, исключающие доступ к ним неуполномоченных лиц.</p>
+      <p>Персональные данные Пользователя могут передаваться третьим лицам, участвующим в обеспечении работы сервисов, в том числе:</p>
+      <ul>
+        <li>сервисам рассылок (Senler)</li>
+        <li>платформе ВКонтакте</li>
+      </ul>
+      <p>Передача осуществляется только в объёме, необходимом для оказания услуг. В случае выявления неточностей в персональных данных Пользователь может актуализировать их, направив уведомление на электронную почту <a href="mailto:biznasv@yandex.ru">biznasv@yandex.ru</a>.</p>
+      <p>Срок обработки персональных данных — до достижения целей обработки или до отзыва согласия Пользователем. Пользователь может в любой момент отозвать согласие, направив уведомление на электронную почту Оператора.</p>
+
+      <h4>7. Трансграничная передача персональных данных</h4>
+      <p>Оператор до начала осуществления трансграничной передачи персональных данных принимает меры по обеспечению защиты прав субъектов персональных данных. Пользователь, предоставляя свои данные, соглашается с возможной трансграничной передачей персональных данных.</p>
+
+      <h4>8. Заключительные положения</h4>
+      <p>Пользователь может получить любые разъяснения по вопросам обработки персональных данных, обратившись к Оператору по электронной почте <a href="mailto:biznasv@yandex.ru">biznasv@yandex.ru</a>.</p>
+      <p>Настоящая Политика действует бессрочно до замены её новой версией. Актуальная версия Политики находится в свободном доступе по адресу: <a href="https://бизнеснасвязях.рф" target="_blank" rel="noopener">https://бизнеснасвязях.рф</a></p>
+    </div>
+    <div class="privacy-footer">
+      <button type="button" onclick="acceptPrivacyAndClose()">Принимаю и закрыть</button>
+    </div>
   </div>
 </div>
 
@@ -529,6 +704,25 @@ function switchScreen(id) {
   document.getElementById(id).classList.add('active');
   window.scrollTo({top: 0, behavior: 'smooth'});
 }
+
+function openPrivacyModal() {
+  document.getElementById('privacy-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePrivacyModal() {
+  document.getElementById('privacy-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function acceptPrivacyAndClose() {
+  document.getElementById('reg-consent').checked = true;
+  closePrivacyModal();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closePrivacyModal();
+});
 
 (async function() {
   await dataManager.load();
